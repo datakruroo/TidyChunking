@@ -1,0 +1,29 @@
+Package: TidyChunking
+Type: Package
+Title: Intelligent Markdown Document Chunking for Text Analysis
+Version: 0.1.0
+Authors@R: person("Your", "Name", email = "your.email@example.com", role = c("aut", "cre"))
+Description: An R package for intelligently chunking markdown documents into 
+    meaningful sections optimized for keyword extraction and text analysis. 
+    Provides hierarchical structure-aware chunking that respects markdown 
+    headings while maintaining optimal chunk sizes for downstream processing.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.0
+Imports:
+    dplyr,
+    tidyr,
+    stringr,
+    purrr,
+    tibble,
+    magrittr
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    tidyllm,
+    jsonlite
+VignetteBuilder: knitr
+URL: https://github.com/datakruroo/TidyChunking
+BugReports: https://github.com/datakruroo/TidyChunking/issues
