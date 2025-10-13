@@ -31,6 +31,16 @@ skills, knowledge, behaviors, tools, practices, and roles.
 This function requires the \code{tidyllm} and \code{jsonlite} packages.
 It uses OpenAI's GPT-4o-mini model by default to extract competencies.
 
+\strong{API Key Setup:}
+Before using this function, you need to set up your OpenAI API key. The easiest way is to add it to your \code{.Renviron} file:
+\preformatted{
+# Add this line to your ~/.Renviron file
+OPENAI_API_KEY="your-api-key-here"
+
+# Restart R session after editing .Renviron
+# You can edit .Renviron with: usethis::edit_r_environ()
+}
+
 Competency categories:
 \itemize{
   \item \strong{knowledge}: Concepts and theories to understand
@@ -46,6 +56,11 @@ based on chunk size (roughly 1 competency per 50 words, capped at max_per_chunk)
 }
 \examples{
 \dontrun{
+# Setup: Add OPENAI_API_KEY to your .Renviron file first
+# You can use: usethis::edit_r_environ()
+# Then add: OPENAI_API_KEY="your-api-key-here"
+# Restart R after editing .Renviron
+
 # Requires tidyllm and jsonlite packages
 if (require(tidyllm) && require(jsonlite)) {
   chunks <- chunk_for_keyword_extraction(markdown_text)
@@ -55,6 +70,7 @@ if (require(tidyllm) && require(jsonlite)) {
   # View results
   head(competencies)
   table(competencies$category)
+  table(competencies$importance)
 }
 }
 

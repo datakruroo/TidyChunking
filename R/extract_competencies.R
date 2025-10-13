@@ -21,6 +21,16 @@
 #' This function requires the \code{tidyllm} and \code{jsonlite} packages.
 #' It uses OpenAI's GPT-4o-mini model by default to extract competencies.
 #' 
+#' \strong{API Key Setup:}
+#' Before using this function, you need to set up your OpenAI API key. The easiest way is to add it to your \code{.Renviron} file:
+#' \preformatted{
+#' # Add this line to your ~/.Renviron file
+#' OPENAI_API_KEY="your-api-key-here"
+#' 
+#' # Restart R session after editing .Renviron
+#' # You can edit .Renviron with: usethis::edit_r_environ()
+#' }
+#' 
 #' Competency categories:
 #' \itemize{
 #'   \item \strong{knowledge}: Concepts and theories to understand
@@ -36,6 +46,11 @@
 #'
 #' @examples
 #' \dontrun{
+#' # Setup: Add OPENAI_API_KEY to your .Renviron file first
+#' # You can use: usethis::edit_r_environ()
+#' # Then add: OPENAI_API_KEY="your-api-key-here"
+#' # Restart R after editing .Renviron
+#' 
 #' # Requires tidyllm and jsonlite packages
 #' if (require(tidyllm) && require(jsonlite)) {
 #'   chunks <- chunk_for_keyword_extraction(markdown_text)
@@ -45,6 +60,7 @@
 #'   # View results
 #'   head(competencies)
 #'   table(competencies$category)
+#'   table(competencies$importance)
 #' }
 #' }
 #'
@@ -65,6 +81,15 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
   
   if (!requireNamespace("jsonlite", quietly = TRUE)) {
     stop("Package 'jsonlite' is required but not installed. Please install it with: install.packages('jsonlite')")
+  }
+  
+  # Check for API key
+  api_key <- Sys.getenv("OPENAI_API_KEY")
+  if (api_key == "" || is.na(api_key)) {
+    stop("OpenAI API key not found. Please set OPENAI_API_KEY in your .Renviron file.\n",
+         "You can edit .Renviron with: usethis::edit_r_environ()\n",
+         "Add this line: OPENAI_API_KEY=\"your-api-key-here\"\n",
+         "Then restart R.")
   }
   
   # สร้าง schema ด้วย tidyllm_schema() + field helpers
@@ -157,7 +182,23 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
             }
             
           }, error = function(e) {
-            warning("Chunk ", id, ": ", e$message, call. = FALSE)
+            # Detailed error reporting for API issues
+            error_msg <- e$message
+            if (grepl("quota|insufficient_quota|rate_limit", error_msg, ignore.case = TRUE)) {
+              warning("Chunk ", id, ": API Quota/Rate Limit Error - ", error_msg, 
+                     "\nCheck your OpenAI billing and usage at https://platform.openai.com/account/billing", 
+                     call. = FALSE)
+            } else if (grepl("api_key|authentication|401", error_msg, ignore.case = TRUE)) {
+              warning("Chunk ", id, ": API Key Error - ", error_msg,
+                     "\nVerify your OPENAI_API_KEY is correct in .Renviron", 
+                     call. = FALSE)
+            } else if (grepl("network|timeout|connection", error_msg, ignore.case = TRUE)) {
+              warning("Chunk ", id, ": Network Error - ", error_msg,
+                     "\nCheck your internet connection", 
+                     call. = FALSE)
+            } else {
+              warning("Chunk ", id, ": ", error_msg, call. = FALSE)
+            }
             tibble::tibble()
           })
           
