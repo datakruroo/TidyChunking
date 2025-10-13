@@ -54,7 +54,7 @@
 #' }
 #'
 #' @importFrom tibble tibble
-#' @importFrom dplyr mutate case_when filter group_by summarise arrange select if_else first min max bind_rows
+#' @importFrom dplyr mutate case_when filter group_by summarise arrange select if_else first bind_rows
 #' @importFrom tidyr fill unnest
 #' @importFrom stringr str_split str_detect str_remove str_count str_trunc regex
 #' @importFrom purrr pmap
