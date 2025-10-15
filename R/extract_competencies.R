@@ -1,18 +1,19 @@
 #' Extract Competencies Using TidyLLM
 #'
-#' Extract data literacy competencies from chunked text using Large Language Models
-#' via the tidyllm package. This function processes each chunk to identify relevant
-#' skills, knowledge, behaviors, tools, practices, and roles.
+#' Extract data literacy competencies for graduate teachers to implement data-driven 
+#' classroom practices from chunked text using Large Language Models via the tidyllm package. 
+#' This function processes each chunk to identify relevant skills, knowledge, behaviors, 
+#' tools, practices, and roles specifically for educational contexts.
 #'
 #' @param chunks A tibble of chunks from \code{\link{chunk_for_keyword_extraction}}
 #' @param max_per_chunk Maximum number of competencies to extract per chunk (default: 15)
 #'
 #' @return A tibble with the following columns:
 #' \describe{
-#'   \item{term}{The competency term or phrase}
+#'   \item{term}{The competency term or phrase for teachers}
 #'   \item{category}{Type of competency: "skill", "knowledge", "behavior", "tool", "practice", or "role"}
-#'   \item{importance}{Importance level: "high", "medium", or "low"}
-#'   \item{definition}{Brief explanation of the competency}
+#'   \item{importance}{Importance level for classroom implementation: "high", "medium", or "low"}
+#'   \item{definition}{Brief explanation of the competency in educational context}
 #'   \item{source_chunk}{ID of the source chunk}
 #'   \item{source_hierarchy}{Hierarchical path of the source chunk}
 #' }
@@ -31,14 +32,22 @@
 #' # You can edit .Renviron with: usethis::edit_r_environ()
 #' }
 #' 
-#' Competency categories:
+#' Competency categories for data-driven classroom teaching:
 #' \itemize{
-#'   \item \strong{knowledge}: Concepts and theories to understand
-#'   \item \strong{skill}: Abilities to perform tasks
-#'   \item \strong{behavior}: Mindsets and approaches
-#'   \item \strong{tool}: Technologies and software to use
-#'   \item \strong{practice}: Methods and procedures to follow
-#'   \item \strong{role}: Positions and responsibilities in organizations
+#'   \item \strong{knowledge}: Concepts and theories teachers need to understand about data use in education
+#'   \item \strong{skill}: Practical abilities teachers need to perform data-related tasks in classroom
+#'   \item \strong{behavior}: Mindsets and approaches teachers should adopt for data-driven teaching
+#'   \item \strong{tool}: Technologies and instruments teachers use for data collection and analysis
+#'   \item \strong{practice}: Methods and procedures teachers follow in data-driven instruction
+#'   \item \strong{role}: Responsibilities teachers have in data-driven educational settings
+#' }
+#'
+#' The function focuses on competencies that enable teachers to:
+#' \itemize{
+#'   \item Use data to improve student learning outcomes
+#'   \item Make evidence-based instructional decisions
+#'   \item Assess and analyze student performance data
+#'   \item Create data-informed learning environments
 #' }
 #'
 #' The function automatically adjusts the number of competencies to extract
@@ -53,14 +62,18 @@
 #' 
 #' # Requires tidyllm and jsonlite packages
 #' if (require(tidyllm) && require(jsonlite)) {
-#'   chunks <- chunk_for_keyword_extraction(markdown_text)
+#'   # Example with educational content
+#'   educational_text <- "Teachers need to analyze student assessment data..."
+#'   chunks <- chunk_for_keyword_extraction(educational_text)
 #'   keyword_chunks <- filter_chunks_for_keywords(chunks)
-#'   competencies <- extract_competencies_tidyllm(keyword_chunks)
 #'   
-#'   # View results
-#'   head(competencies)
-#'   table(competencies$category)
-#'   table(competencies$importance)
+#'   # Extract teacher competencies for data-driven classroom
+#'   teacher_competencies <- extract_competencies_tidyllm(keyword_chunks)
+#'   
+#'   # View results focused on teaching
+#'   head(teacher_competencies)
+#'   table(teacher_competencies$category)
+#'   table(teacher_competencies$importance)
 #' }
 #' }
 #'
@@ -127,23 +140,27 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
           n_comp <- max(n_comp, 3)
           
           prompt_text <- paste0(
-            'Extract the top ', n_comp, ' data literacy COMPETENCIES from this text.\n\n',
-            'A competency is what a data literate person needs to KNOW, DO, or DEMONSTRATE.\n\n',
+            'Extract the top ', n_comp, ' data literacy COMPETENCIES for GRADUATE TEACHERS to implement DATA-DRIVEN CLASSROOM practices from this text.\n\n',
+            'Focus on competencies that enable teachers to:\n',
+            '- Use data to improve student learning outcomes\n',
+            '- Make evidence-based instructional decisions\n',
+            '- Assess and analyze student performance data\n',
+            '- Create data-informed learning environments\n\n',
             'Categories:\n',
-            '- knowledge: concepts, theories to understand\n',
-            '- skill: abilities to perform\n',
-            '- behavior: mindsets and approaches\n',
-            '- tool: technologies to use\n',
-            '- practice: methods to follow\n',
-            '- role: positions in organizations\n\n',
-            'Importance: high, medium, low\n\n',
+            '- knowledge: concepts, theories teachers need to understand about data use in education\n',
+            '- skill: practical abilities teachers need to perform data-related tasks in classroom\n',
+            '- behavior: mindsets and approaches teachers should adopt for data-driven teaching\n',
+            '- tool: technologies and instruments teachers use for data collection and analysis\n',
+            '- practice: methods and procedures teachers follow in data-driven instruction\n',
+            '- role: responsibilities teachers have in data-driven educational settings\n\n',
+            'Importance levels for classroom implementation: high, medium, low\n\n',
             'Return ONLY a JSON array (no other text):\n',
             '[\n',
             '  {\n',
-            '    "term": "data storytelling",\n',
+            '    "term": "formative assessment data analysis",\n',
             '    "category": "skill",\n',
             '    "importance": "high",\n',
-            '    "definition": "Communicate insights through narrative and visualization"\n',
+            '    "definition": "Analyze ongoing assessment data to adjust instruction and support student learning"\n',
             '  }\n',
             ']\n\n',
             'Section: ', hier, '\n\n',

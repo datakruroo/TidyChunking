@@ -1,7 +1,16 @@
 # TidyChunking <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/datakruroo/TidyChunking/workflows/R-CMD-check/badge.svg)](https://github.com/datakruroo/TidyChunking/actions)
+[![R-CMD-che### Extracted Teacher Competencies
+
+```r
+# A tibble: 15 × 6
+   term                     category  importance definition                                source_chunk source_hierarchy              
+   <chr>                    <chr>     <chr>      <chr>                                <chr>        <chr>                        
+ 1 formative assessment     skill     high       "วิเคราะห์ข้อมูลการประเมินเพื่อปรับการสอน"     2.1          "การประเมินผลในชั้นเรียน"        
+ 2 student data analysis    knowledge high       "ความรู้การวิเคราะห์ข้อมูลนักเรียน"          4.1          "การใช้ข้อมูลเพื่อการสอน"     
+ 3 data-driven instruction  practice  high       "การสอนที่อิงข้อมูลเชิงประจักษ์"           4.1          "วิธีการสอนสมัยใหม่"     
+```//github.com/datakruroo/TidyChunking/workflows/R-CMD-check/badge.svg)](https://github.com/datakruroo/TidyChunking/actions)
 [![CRAN status](https://www.r-pkg.org/badges/version/TidyChunking)](https://CRAN.R-project.org/package=TidyChunking)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
@@ -14,7 +23,7 @@
 - 📏 **Optimal Chunk Sizes**: ควบคุมขนาด chunk ให้เหมาะสมกับการประมวลผล
 - 🏷️ **Content Classification**: จำแนกประเภทเนื้อหาอัตโนมัติ (main content, examples, metadata)
 - 🔍 **Keyword Extraction Ready**: ออกแบบมาเฉพาะสำหรับการสกัดคำสำคัญ
-- 🤖 **LLM Integration**: รองรับการสกัด competencies ด้วย AI (ผ่าน tidyllm)
+- 🤖 **Teacher-Focused AI**: สกัด competencies เฉพาะสำหรับบัณฑิตครูในการทำ data-driven classroom
 
 ## 📦 การติดตั้ง
 
@@ -88,19 +97,19 @@ install.packages(c("tidyllm", "jsonlite"))
 # ขั้นตอนที่ 4: ตรวจสอบการตั้งค่า (แนะนำ)
 check_openai_setup()  # ช่วย debug ปัญหา API
 
-# ขั้นตอนที่ 5: สกัด competencies  
+# ขั้นตอนที่ 5: สกัด competencies สำหรับครู
 if (require(tidyllm) && require(jsonlite)) {
   
-  # สกัด competencies
-  competencies <- extract_competencies_tidyllm(
+  # สกัด competencies เฉพาะสำหรับบัณฑิตครูในการทำ data-driven classroom
+  teacher_competencies <- extract_competencies_tidyllm(
     keyword_chunks, 
     max_per_chunk = 10
   )
   
   # ดูผลลัพธ์
-  head(competencies)
-  table(competencies$category)
-  table(competencies$importance)
+  head(teacher_competencies)
+  table(teacher_competencies$category)
+  table(teacher_competencies$importance)
 }
 ```
 

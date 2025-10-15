@@ -14,18 +14,19 @@ extract_competencies_tidyllm(chunks, max_per_chunk = 15)
 \value{
 A tibble with the following columns:
 \describe{
-  \item{term}{The competency term or phrase}
+  \item{term}{The competency term or phrase for teachers}
   \item{category}{Type of competency: "skill", "knowledge", "behavior", "tool", "practice", or "role"}
-  \item{importance}{Importance level: "high", "medium", or "low"}
-  \item{definition}{Brief explanation of the competency}
+  \item{importance}{Importance level for classroom implementation: "high", "medium", or "low"}
+  \item{definition}{Brief explanation of the competency in educational context}
   \item{source_chunk}{ID of the source chunk}
   \item{source_hierarchy}{Hierarchical path of the source chunk}
 }
 }
 \description{
-Extract data literacy competencies from chunked text using Large Language Models
-via the tidyllm package. This function processes each chunk to identify relevant
-skills, knowledge, behaviors, tools, practices, and roles.
+Extract data literacy competencies for graduate teachers to implement data-driven 
+classroom practices from chunked text using Large Language Models via the tidyllm package. 
+This function processes each chunk to identify relevant skills, knowledge, behaviors, 
+tools, practices, and roles specifically for educational contexts.
 }
 \details{
 This function requires the \code{tidyllm} and \code{jsonlite} packages.
@@ -41,14 +42,22 @@ OPENAI_API_KEY="your-api-key-here"
 # You can edit .Renviron with: usethis::edit_r_environ()
 }
 
-Competency categories:
+Competency categories for data-driven classroom teaching:
 \itemize{
-  \item \strong{knowledge}: Concepts and theories to understand
-  \item \strong{skill}: Abilities to perform tasks
-  \item \strong{behavior}: Mindsets and approaches
-  \item \strong{tool}: Technologies and software to use
-  \item \strong{practice}: Methods and procedures to follow
-  \item \strong{role}: Positions and responsibilities in organizations
+  \item \strong{knowledge}: Concepts and theories teachers need to understand about data use in education
+  \item \strong{skill}: Practical abilities teachers need to perform data-related tasks in classroom
+  \item \strong{behavior}: Mindsets and approaches teachers should adopt for data-driven teaching
+  \item \strong{tool}: Technologies and instruments teachers use for data collection and analysis
+  \item \strong{practice}: Methods and procedures teachers follow in data-driven instruction
+  \item \strong{role}: Responsibilities teachers have in data-driven educational settings
+}
+
+The function focuses on competencies that enable teachers to:
+\itemize{
+  \item Use data to improve student learning outcomes
+  \item Make evidence-based instructional decisions
+  \item Assess and analyze student performance data
+  \item Create data-informed learning environments
 }
 
 The function automatically adjusts the number of competencies to extract
@@ -63,14 +72,18 @@ based on chunk size (roughly 1 competency per 50 words, capped at max_per_chunk)
 
 # Requires tidyllm and jsonlite packages
 if (require(tidyllm) && require(jsonlite)) {
-  chunks <- chunk_for_keyword_extraction(markdown_text)
+  # Example with educational content
+  educational_text <- "Teachers need to analyze student assessment data..."
+  chunks <- chunk_for_keyword_extraction(educational_text)
   keyword_chunks <- filter_chunks_for_keywords(chunks)
-  competencies <- extract_competencies_tidyllm(keyword_chunks)
   
-  # View results
-  head(competencies)
-  table(competencies$category)
-  table(competencies$importance)
+  # Extract teacher competencies for data-driven classroom
+  teacher_competencies <- extract_competencies_tidyllm(keyword_chunks)
+  
+  # View results focused on teaching
+  head(teacher_competencies)
+  table(teacher_competencies$category)
+  table(teacher_competencies$importance)
 }
 }
 

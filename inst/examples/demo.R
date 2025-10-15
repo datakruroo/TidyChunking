@@ -123,10 +123,12 @@ if (nrow(keyword_chunks) > 0) {
 }
 
 cat("\n=== Demo Complete! ===\n")
-cat("To extract competencies with AI:\n")
+cat("To extract teacher competencies for data-driven classroom with AI:\n")
 cat("1. Set up your OpenAI API key in .Renviron:\n")
 cat("   usethis::edit_r_environ()\n")
 cat("   Add: OPENAI_API_KEY=\"your-api-key-here\"\n")
 cat("2. Restart R session\n")
 cat("3. Install packages: install.packages(c('tidyllm', 'jsonlite'))\n")
 cat("4. Use: extract_competencies_tidyllm(keyword_chunks)\n")
+cat("   Note: This extracts competencies specifically for graduate teachers\n")
+cat("         to implement data-driven classroom practices\n")
