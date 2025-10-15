@@ -171,9 +171,10 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
             
             response <- tidyllm::llm_message(prompt_text) %>% 
               tidyllm::chat(
-                tidyllm::openai(.model = "gpt-4o-mini"),
+                tidyllm::openai(.model = "gpt-4.1-mini"),
                 .json_schema = competency_schema,
-                .temperature = 0.3,
+                .temperature = 0,
+                .top_p = 1,
                 .timeout = 120
               )
             
