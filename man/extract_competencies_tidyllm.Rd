@@ -60,6 +60,11 @@ The function focuses on competencies that enable teachers to:
   \item Create data-informed learning environments
 }
 
+\strong{Important}: This function extracts only competencies that are explicitly 
+mentioned or directly implied in the source text. It does not generate new terms 
+that are not present in the original content, ensuring accuracy and relevance to 
+the specific document being analyzed.
+
 The function automatically adjusts the number of competencies to extract
 based on chunk size (roughly 1 competency per 50 words, capped at max_per_chunk).
 }

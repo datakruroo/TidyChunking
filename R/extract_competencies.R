@@ -50,6 +50,11 @@
 #'   \item Create data-informed learning environments
 #' }
 #'
+#' \strong{Important}: This function extracts only competencies that are explicitly 
+#' mentioned or directly implied in the source text. It does not generate new terms 
+#' that are not present in the original content, ensuring accuracy and relevance to 
+#' the specific document being analyzed.
+#'
 #' The function automatically adjusts the number of competencies to extract
 #' based on chunk size (roughly 1 competency per 50 words, capped at max_per_chunk).
 #'
@@ -141,11 +146,19 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
           
           prompt_text <- paste0(
             'Extract the top ', n_comp, ' data literacy COMPETENCIES for GRADUATE TEACHERS to implement DATA-DRIVEN CLASSROOM practices from this text.\n\n',
+            'IMPORTANT: Only extract competencies that are explicitly mentioned or directly implied in the given text. Do not create new terms that are not present in the source material.\n\n',
             'Focus on competencies that enable teachers to:\n',
             '- Use data to improve student learning outcomes\n',
             '- Make evidence-based instructional decisions\n',
             '- Assess and analyze student performance data\n',
             '- Create data-informed learning environments\n\n',
+            'Look for terms, concepts, skills, or practices mentioned in the text that relate to:\n',
+            '- Data collection and analysis in educational settings\n',
+            '- Assessment and evaluation methods\n',
+            '- Teaching strategies based on evidence\n',
+            '- Educational technology for data use\n',
+            '- Student performance monitoring\n',
+            '- Instructional decision-making\n\n',
             'Categories:\n',
             '- knowledge: concepts, theories teachers need to understand about data use in education\n',
             '- skill: practical abilities teachers need to perform data-related tasks in classroom\n',
@@ -154,13 +167,14 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
             '- practice: methods and procedures teachers follow in data-driven instruction\n',
             '- role: responsibilities teachers have in data-driven educational settings\n\n',
             'Importance levels for classroom implementation: high, medium, low\n\n',
+            'Extract only terms that appear in or are directly supported by the text content.\n\n',
             'Return ONLY a JSON array (no other text):\n',
             '[\n',
             '  {\n',
-            '    "term": "formative assessment data analysis",\n',
+            '    "term": "[exact term or phrase from the text]",\n',
             '    "category": "skill",\n',
             '    "importance": "high",\n',
-            '    "definition": "Analyze ongoing assessment data to adjust instruction and support student learning"\n',
+            '    "definition": "[definition based on context in the text]"\n',
             '  }\n',
             ']\n\n',
             'Section: ', hier, '\n\n',
@@ -171,10 +185,10 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
             
             response <- tidyllm::llm_message(prompt_text) %>% 
               tidyllm::chat(
-                tidyllm::openai(.model = "gpt-4.1-mini"),
+                tidyllm::openai(.model = "gpt-4o-mini"),
                 .json_schema = competency_schema,
-                .temperature = 0,
-                .top_p = 1,
+                .temperature = 0.1,  # ลดลงเพื่อให้ติดกับข้อความมากขึ้น
+                .top_p = 0.8,       # ลดลงเพื่อลดการสร้างคำใหม่
                 .timeout = 120
               )
             

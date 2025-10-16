@@ -106,10 +106,13 @@ if (require(tidyllm) && require(jsonlite)) {
     max_per_chunk = 10
   )
   
+  # ขั้นตอนที่ 6: ตรวจสอบคุณภาพผลลัพธ์ (แนะนำ)
+  validated_competencies <- validate_competencies(teacher_competencies, chunks)
+  
   # ดูผลลัพธ์
-  head(teacher_competencies)
-  table(teacher_competencies$category)
-  table(teacher_competencies$importance)
+  head(validated_competencies)
+  table(validated_competencies$category)
+  table(validated_competencies$confidence > 0.7)  # ดูความมั่นใจ
 }
 ```
 
