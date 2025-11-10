@@ -227,7 +227,7 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15, model = "gp
     dplyr::mutate(
       competencies = purrr::pmap(
         list(chunk_text, chunk_id, hierarchy, word_count),
-        function(text, id, hier, wc) {
+        function(text, id, hier, wc, prompt_fn = prompt_function, schema_obj = schema, model_name = model) {
           
           cat("Processing chunk", id, "(", wc, "words)...\n")
           
@@ -236,19 +236,19 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15, model = "gp
           n_comp <- max(n_comp, 3)
           
           # ใช้ prompt function ที่เลือก (custom หรือ default)
-          prompt_text <- prompt_function(n_comp, hier, text)
+          prompt_text <- prompt_fn(n_comp, hier, text)
           
           result <- tryCatch({
             
             # Check if model supports structured output
-            supports_json_schema <- !grepl("gpt-3.5", model, ignore.case = TRUE)
+            supports_json_schema <- !grepl("gpt-3.5", model_name, ignore.case = TRUE)
             
             if (supports_json_schema) {
               # Use structured output for GPT-4 models
               response <- tidyllm::llm_message(prompt_text) %>% 
                 tidyllm::chat(
-                  tidyllm::openai(.model = model),  # ใช้ model ที่เลือก
-                  .json_schema = schema,            # ใช้ schema ที่เลือก
+                  tidyllm::openai(.model = model_name),  # ใช้ model ที่เลือก
+                  .json_schema = schema_obj,            # ใช้ schema ที่เลือก
                   .temperature = 0.1,  # ลดลงเพื่อให้ติดกับข้อความมากขึ้น
                   .top_p = 0.8,       # ลดลงเพื่อลดการสร้างคำใหม่
                   .timeout = 120
@@ -257,7 +257,7 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15, model = "gp
               # Fallback for models that don't support json_schema
               response <- tidyllm::llm_message(prompt_text) %>% 
                 tidyllm::chat(
-                  tidyllm::openai(.model = model),
+                  tidyllm::openai(.model = model_name),
                   .temperature = 0.1,
                   .top_p = 0.8,
                   .timeout = 120
