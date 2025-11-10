@@ -4,12 +4,24 @@
 \alias{extract_competencies_tidyllm}
 \title{Extract Competencies Using TidyLLM}
 \usage{
-extract_competencies_tidyllm(chunks, max_per_chunk = 15)
+extract_competencies_tidyllm(
+  chunks,
+  max_per_chunk = 15,
+  model = "gpt-4o-mini",
+  custom_prompt = NULL,
+  custom_schema = NULL
+)
 }
 \arguments{
 \item{chunks}{A tibble of chunks from \code{\link{chunk_for_keyword_extraction}}}
 
 \item{max_per_chunk}{Maximum number of competencies to extract per chunk (default: 15)}
+
+\item{model}{Model to use for extraction (default: "gpt-4o-mini")}
+
+\item{custom_prompt}{Custom prompt text function. If NULL, uses default teacher competency prompt}
+
+\item{custom_schema}{Custom tidyllm schema. If NULL, uses default competency schema}
 }
 \value{
 A tibble with the following columns:
@@ -60,6 +72,20 @@ The function focuses on competencies that enable teachers to:
   \item Create data-informed learning environments
 }
 
+\strong{Customization Options:}
+\itemize{
+  \item \code{model}: Choose different OpenAI models (e.g., "gpt-4", "gpt-4o", "gpt-3.5-turbo")
+  \item \code{custom_prompt}: Provide your own prompt generation function for different domains
+  \item \code{custom_schema}: Define your own extraction schema for different output formats
+}
+
+\strong{Custom Prompt Function:}
+Your custom prompt function should accept parameters: \code{(n_comp, hier, text)} 
+and return a string prompt.
+
+\strong{Custom Schema:}
+Use \code{tidyllm::tidyllm_schema()} to define your extraction structure.
+
 \strong{Important}: This function extracts only competencies that are explicitly 
 mentioned or directly implied in the source text. It does not generate new terms 
 that are not present in the original content, ensuring accuracy and relevance to 
@@ -82,13 +108,39 @@ if (require(tidyllm) && require(jsonlite)) {
   chunks <- chunk_for_keyword_extraction(educational_text)
   keyword_chunks <- filter_chunks_for_keywords(chunks)
   
-  # Extract teacher competencies for data-driven classroom
+  # Extract teacher competencies for data-driven classroom (default)
   teacher_competencies <- extract_competencies_tidyllm(keyword_chunks)
   
-  # View results focused on teaching
+  # Use different model
+  teacher_competencies_gpt4 <- extract_competencies_tidyllm(
+    keyword_chunks, 
+    model = "gpt-4"
+  )
+  
+  # Custom prompt for business analysis
+  business_prompt <- function(n_comp, hier, text) {
+    paste0("Extract ", n_comp, " business skills from: ", text)
+  }
+  
+  # Custom schema for different output
+  business_schema <- tidyllm::tidyllm_schema(
+    name = "business_extraction",
+    skills = tidyllm::field_object(
+      .vector = TRUE,
+      skill = tidyllm::field_chr(.description = "Business skill"),
+      level = tidyllm::field_fct(.levels = c("basic", "intermediate", "advanced"))
+    )
+  )
+  
+  business_skills <- extract_competencies_tidyllm(
+    keyword_chunks,
+    custom_prompt = business_prompt,
+    custom_schema = business_schema
+  )
+  
+  # View results
   head(teacher_competencies)
   table(teacher_competencies$category)
-  table(teacher_competencies$importance)
 }
 }
 

@@ -7,6 +7,9 @@
 #'
 #' @param chunks A tibble of chunks from \code{\link{chunk_for_keyword_extraction}}
 #' @param max_per_chunk Maximum number of competencies to extract per chunk (default: 15)
+#' @param model Model to use for extraction (default: "gpt-4o-mini")
+#' @param custom_prompt Custom prompt text function. If NULL, uses default teacher competency prompt
+#' @param custom_schema Custom tidyllm schema. If NULL, uses default competency schema
 #'
 #' @return A tibble with the following columns:
 #' \describe{
@@ -50,6 +53,20 @@
 #'   \item Create data-informed learning environments
 #' }
 #'
+#' \strong{Customization Options:}
+#' \itemize{
+#'   \item \code{model}: Choose different OpenAI models (e.g., "gpt-4", "gpt-4o", "gpt-3.5-turbo")
+#'   \item \code{custom_prompt}: Provide your own prompt generation function for different domains
+#'   \item \code{custom_schema}: Define your own extraction schema for different output formats
+#' }
+#'
+#' \strong{Custom Prompt Function:}
+#' Your custom prompt function should accept parameters: \code{(n_comp, hier, text)} 
+#' and return a string prompt.
+#' 
+#' \strong{Custom Schema:}
+#' Use \code{tidyllm::tidyllm_schema()} to define your extraction structure.
+#'
 #' \strong{Important}: This function extracts only competencies that are explicitly 
 #' mentioned or directly implied in the source text. It does not generate new terms 
 #' that are not present in the original content, ensuring accuracy and relevance to 
@@ -72,13 +89,39 @@
 #'   chunks <- chunk_for_keyword_extraction(educational_text)
 #'   keyword_chunks <- filter_chunks_for_keywords(chunks)
 #'   
-#'   # Extract teacher competencies for data-driven classroom
+#'   # Extract teacher competencies for data-driven classroom (default)
 #'   teacher_competencies <- extract_competencies_tidyllm(keyword_chunks)
 #'   
-#'   # View results focused on teaching
+#'   # Use different model
+#'   teacher_competencies_gpt4 <- extract_competencies_tidyllm(
+#'     keyword_chunks, 
+#'     model = "gpt-4"
+#'   )
+#'   
+#'   # Custom prompt for business analysis
+#'   business_prompt <- function(n_comp, hier, text) {
+#'     paste0("Extract ", n_comp, " business skills from: ", text)
+#'   }
+#'   
+#'   # Custom schema for different output
+#'   business_schema <- tidyllm::tidyllm_schema(
+#'     name = "business_extraction",
+#'     skills = tidyllm::field_object(
+#'       .vector = TRUE,
+#'       skill = tidyllm::field_chr(.description = "Business skill"),
+#'       level = tidyllm::field_fct(.levels = c("basic", "intermediate", "advanced"))
+#'     )
+#'   )
+#'   
+#'   business_skills <- extract_competencies_tidyllm(
+#'     keyword_chunks,
+#'     custom_prompt = business_prompt,
+#'     custom_schema = business_schema
+#'   )
+#'   
+#'   # View results
 #'   head(teacher_competencies)
 #'   table(teacher_competencies$category)
-#'   table(teacher_competencies$importance)
 #' }
 #' }
 #'
@@ -90,7 +133,8 @@
 #' @importFrom magrittr %>%
 #'
 #' @export
-extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
+extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15, model = "gpt-4o-mini", 
+                                       custom_prompt = NULL, custom_schema = NULL) {
   
   # Check for required packages
   if (!requireNamespace("tidyllm", quietly = TRUE)) {
@@ -110,26 +154,73 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
          "Then restart R.")
   }
   
-  # สร้าง schema ด้วย tidyllm_schema() + field helpers
-  competency_schema <- tidyllm::tidyllm_schema(
-    name = "competency_extraction",
-    # Array of objects ใช้ field_object() กับ .vector = TRUE
-    competencies = tidyllm::field_object(
-      .description = "Array of extracted competencies",
-      .vector = TRUE,  # สำคัญ! บอกว่าเป็น array
-      # Define structure ของแต่ละ object
-      term = tidyllm::field_chr(.description = "Competency term or phrase"),
-      category = tidyllm::field_fct(
-        .description = "Type of competency",
-        .levels = c("skill", "knowledge", "behavior", "tool", "practice", "role")
-      ),
-      importance = tidyllm::field_fct(
-        .description = "Importance level",
-        .levels = c("high", "medium", "low")
-      ),
-      definition = tidyllm::field_chr(.description = "Brief explanation of competency")
+  # Default prompt function for teacher competencies
+  default_prompt <- function(n_comp, hier, text) {
+    paste0(
+      'Extract the top ', n_comp, ' data literacy COMPETENCIES for GRADUATE TEACHERS to implement DATA-DRIVEN CLASSROOM practices from this text.\n\n',
+      'IMPORTANT: Only extract competencies that are explicitly mentioned or directly implied in the given text. Do not create new terms that are not present in the source material.\n\n',
+      'Focus on competencies that enable teachers to:\n',
+      '- Use data to improve student learning outcomes\n',
+      '- Make evidence-based instructional decisions\n',
+      '- Assess and analyze student performance data\n',
+      '- Create data-informed learning environments\n\n',
+      'Look for terms, concepts, skills, or practices mentioned in the text that relate to:\n',
+      '- Data collection and analysis in educational settings\n',
+      '- Assessment and evaluation methods\n',
+      '- Teaching strategies based on evidence\n',
+      '- Educational technology for data use\n',
+      '- Student performance monitoring\n',
+      '- Instructional decision-making\n\n',
+      'Categories:\n',
+      '- knowledge: concepts, theories teachers need to understand about data use in education\n',
+      '- skill: practical abilities teachers need to perform data-related tasks in classroom\n',
+      '- behavior: mindsets and approaches teachers should adopt for data-driven teaching\n',
+      '- tool: technologies and instruments teachers use for data collection and analysis\n',
+      '- practice: methods and procedures teachers follow in data-driven instruction\n',
+      '- role: responsibilities teachers have in data-driven educational settings\n\n',
+      'Importance levels for classroom implementation: high, medium, low\n\n',
+      'Extract only terms that appear in or are directly supported by the text content.\n\n',
+      'Return ONLY a JSON array (no other text):\n',
+      '[\n',
+      '  {\n',
+      '    "term": "[exact term or phrase from the text]",\n',
+      '    "category": "skill",\n',
+      '    "importance": "high",\n',
+      '    "definition": "[definition based on context in the text]"\n',
+      '  }\n',
+      ']\n\n',
+      'Section: ', hier, '\n\n',
+      'Text:\n', text
     )
-  )
+  }
+  
+  # Use custom prompt or default
+  prompt_function <- if (!is.null(custom_prompt)) custom_prompt else default_prompt
+  
+  # สร้าง default schema หรือใช้ custom schema
+  schema <- if (!is.null(custom_schema)) {
+    custom_schema
+  } else {
+    tidyllm::tidyllm_schema(
+      name = "competency_extraction",
+      # Array of objects ใช้ field_object() กับ .vector = TRUE
+      competencies = tidyllm::field_object(
+        .description = "Array of extracted competencies",
+        .vector = TRUE,  # สำคัญ! บอกว่าเป็น array
+        # Define structure ของแต่ละ object
+        term = tidyllm::field_chr(.description = "Competency term or phrase"),
+        category = tidyllm::field_fct(
+          .description = "Type of competency",
+          .levels = c("skill", "knowledge", "behavior", "tool", "practice", "role")
+        ),
+        importance = tidyllm::field_fct(
+          .description = "Importance level",
+          .levels = c("high", "medium", "low")
+        ),
+        definition = tidyllm::field_chr(.description = "Brief explanation of competency")
+      )
+    )
+  }
   
   # Extract
   all_competencies <- chunks %>% 
@@ -144,53 +235,34 @@ extract_competencies_tidyllm <- function(chunks, max_per_chunk = 15) {
           n_comp <- min(n_comp, max_per_chunk)
           n_comp <- max(n_comp, 3)
           
-          prompt_text <- paste0(
-            'Extract the top ', n_comp, ' data literacy COMPETENCIES for GRADUATE TEACHERS to implement DATA-DRIVEN CLASSROOM practices from this text.\n\n',
-            'IMPORTANT: Only extract competencies that are explicitly mentioned or directly implied in the given text. Do not create new terms that are not present in the source material.\n\n',
-            'Focus on competencies that enable teachers to:\n',
-            '- Use data to improve student learning outcomes\n',
-            '- Make evidence-based instructional decisions\n',
-            '- Assess and analyze student performance data\n',
-            '- Create data-informed learning environments\n\n',
-            'Look for terms, concepts, skills, or practices mentioned in the text that relate to:\n',
-            '- Data collection and analysis in educational settings\n',
-            '- Assessment and evaluation methods\n',
-            '- Teaching strategies based on evidence\n',
-            '- Educational technology for data use\n',
-            '- Student performance monitoring\n',
-            '- Instructional decision-making\n\n',
-            'Categories:\n',
-            '- knowledge: concepts, theories teachers need to understand about data use in education\n',
-            '- skill: practical abilities teachers need to perform data-related tasks in classroom\n',
-            '- behavior: mindsets and approaches teachers should adopt for data-driven teaching\n',
-            '- tool: technologies and instruments teachers use for data collection and analysis\n',
-            '- practice: methods and procedures teachers follow in data-driven instruction\n',
-            '- role: responsibilities teachers have in data-driven educational settings\n\n',
-            'Importance levels for classroom implementation: high, medium, low\n\n',
-            'Extract only terms that appear in or are directly supported by the text content.\n\n',
-            'Return ONLY a JSON array (no other text):\n',
-            '[\n',
-            '  {\n',
-            '    "term": "[exact term or phrase from the text]",\n',
-            '    "category": "skill",\n',
-            '    "importance": "high",\n',
-            '    "definition": "[definition based on context in the text]"\n',
-            '  }\n',
-            ']\n\n',
-            'Section: ', hier, '\n\n',
-            'Text:\n', text
-          )
+          # ใช้ prompt function ที่เลือก (custom หรือ default)
+          prompt_text <- prompt_function(n_comp, hier, text)
           
           result <- tryCatch({
             
-            response <- tidyllm::llm_message(prompt_text) %>% 
-              tidyllm::chat(
-                tidyllm::openai(.model = "gpt-4o-mini"),
-                .json_schema = competency_schema,
-                .temperature = 0.1,  # ลดลงเพื่อให้ติดกับข้อความมากขึ้น
-                .top_p = 0.8,       # ลดลงเพื่อลดการสร้างคำใหม่
-                .timeout = 120
-              )
+            # Check if model supports structured output
+            supports_json_schema <- !grepl("gpt-3.5", model, ignore.case = TRUE)
+            
+            if (supports_json_schema) {
+              # Use structured output for GPT-4 models
+              response <- tidyllm::llm_message(prompt_text) %>% 
+                tidyllm::chat(
+                  tidyllm::openai(.model = model),  # ใช้ model ที่เลือก
+                  .json_schema = schema,            # ใช้ schema ที่เลือก
+                  .temperature = 0.1,  # ลดลงเพื่อให้ติดกับข้อความมากขึ้น
+                  .top_p = 0.8,       # ลดลงเพื่อลดการสร้างคำใหม่
+                  .timeout = 120
+                )
+            } else {
+              # Fallback for models that don't support json_schema
+              response <- tidyllm::llm_message(prompt_text) %>% 
+                tidyllm::chat(
+                  tidyllm::openai(.model = model),
+                  .temperature = 0.1,
+                  .top_p = 0.8,
+                  .timeout = 120
+                )
+            }
             
             reply <- tidyllm::get_reply(response)
             

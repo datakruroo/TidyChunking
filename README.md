@@ -116,6 +116,105 @@ if (require(tidyllm) && require(jsonlite)) {
 }
 ```
 
+### การปรับแต่ง extract_competencies_tidyllm
+
+Function นี้สามารถปรับแต่งได้ 3 ประการหลัก:
+
+#### 1. เลือก Model
+
+```r
+# ใช้ GPT-4 แทน default gpt-4o-mini (ถ้ามี access)
+teacher_comp_gpt4 <- extract_competencies_tidyllm(
+  keyword_chunks,
+  model = "gpt-4"
+)
+
+# ใช้ GPT-3.5-turbo (ถูกกว่า)
+teacher_comp_gpt35 <- extract_competencies_tidyllm(
+  keyword_chunks,
+  model = "gpt-3.5-turbo"
+)
+```
+
+#### 2. Custom Prompt Function
+
+```r
+# สร้าง prompt function สำหรับ business skills
+business_prompt <- function(n_comp, hierarchy, text) {
+  paste0(
+    "Extract ", n_comp, " BUSINESS SKILLS from this text.\n",
+    "Categories: technical, analytical, communication, leadership\n",
+    "JSON format: [{\"skill\": \"name\", \"type\": \"technical\", \"level\": \"advanced\"}]\n",
+    "Text: ", text
+  )
+}
+
+# ใช้ custom prompt
+business_skills <- extract_competencies_tidyllm(
+  keyword_chunks,
+  custom_prompt = business_prompt
+)
+```
+
+#### 3. Custom Schema
+
+```r
+# สร้าง schema สำหรับ business skills
+business_schema <- tidyllm::tidyllm_schema(
+  name = "business_extraction",
+  competencies = tidyllm::field_object(
+    .vector = TRUE,
+    skill = tidyllm::field_chr(.description = "Business skill name"),
+    type = tidyllm::field_fct(.levels = c("technical", "analytical", "communication", "leadership")),
+    level = tidyllm::field_fct(.levels = c("beginner", "intermediate", "advanced"))
+  )
+)
+
+# ใช้ custom prompt และ schema ร่วมกัน
+business_skills <- extract_competencies_tidyllm(
+  keyword_chunks,
+  custom_prompt = business_prompt,
+  custom_schema = business_schema
+)
+```
+
+#### ตัวอย่างครบชุดสำหรับ Healthcare
+
+```r
+# Healthcare prompt
+healthcare_prompt <- function(n_comp, hier, text) {
+  paste0(
+    "Extract ", n_comp, " HEALTHCARE COMPETENCIES.\n",
+    "Categories: clinical, technical, communication, safety\n",
+    "Priority: critical, important, useful\n",
+    "JSON: [{\"competency\": \"name\", \"type\": \"clinical\", \"priority\": \"critical\"}]\n",
+    "Text: ", text
+  )
+}
+
+# Healthcare schema  
+healthcare_schema <- tidyllm::tidyllm_schema(
+  name = "healthcare",
+  competencies = tidyllm::field_object(
+    .vector = TRUE,
+    competency = tidyllm::field_chr(.description = "Healthcare competency"),
+    type = tidyllm::field_fct(.levels = c("clinical", "technical", "communication", "safety")),
+    priority = tidyllm::field_fct(.levels = c("critical", "important", "useful"))
+  )
+)
+
+# Extract healthcare competencies
+healthcare_comp <- extract_competencies_tidyllm(
+  keyword_chunks,
+  model = "gpt-4o-mini",
+  custom_prompt = healthcare_prompt,
+  custom_schema = healthcare_schema
+)
+```
+
+> **📁 ดูตัวอย่างเพิ่มเติม:** `inst/examples/demo_advanced.R`
+```
+
 ## 📊 ตัวอย่างผลลัพธ์
 
 ### Chunk Structure

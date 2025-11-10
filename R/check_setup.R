@@ -38,7 +38,13 @@ check_openai_setup <- function() {
   }
   
   # Results
+  overall_status <- "success"
+  if (!api_key_ok || !tidyllm_available || !jsonlite_available || !api_test_ok) {
+    overall_status <- "error"
+  }
+  
   results <- list(
+    status = overall_status,
     api_key_found = api_key != "" && !is.na(api_key),
     api_key_format_ok = startsWith(api_key, "sk-"),
     api_key_length = nchar(api_key),
